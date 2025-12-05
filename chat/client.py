@@ -25,22 +25,40 @@ output = []
 
 def handle_message(channel, method, props, body):
     data = json.loads(body)
+    sender = data['sender']
 
-    # TODO: Fill code
+    if data['type'] == 'joined':
+        output.append(f'(i) {sender} just joined')
+    elif data['type'] == 'left':
+        output.append(f'(i) {sender} just left')
+    elif data['type'] == 'msg':
+        timestamp = data['timestamp']
+        content = data['content']
+        output.append(f'({timestamp}) {sender}> {content}')
     
     w.content = FormattedTextControl('\n'.join(output))
+    app.invalidate()
 
 
 def message_listener():
-    # TODO: Fill code
-    pass
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+    channel.exchange_declare(exchange=CHAT_NAME, exchange_type='fanout')
+    result = channel.queue_declare(queue='', exclusive=True)
+    queue_name = result.method.queue
+    channel.queue_bind(exchange=CHAT_NAME, queue=queue_name)
+    channel.basic_consume(queue=queue_name, on_message_callback=handle_message, auto_ack=True)
+    channel.start_consuming()
 
 
 # ----------- Setup sending messages
 
 def send_on_rabbitmq(msg):
-    # TODO: Fill code
-    pass
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+    channel.exchange_declare(exchange=CHAT_NAME, exchange_type='fanout')
+    channel.basic_publish(exchange=CHAT_NAME, routing_key='', body=json.dumps(msg))
+    connection.close()
 
 def send_message(content):
     send_on_rabbitmq({
