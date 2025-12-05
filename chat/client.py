@@ -40,6 +40,7 @@ def message_listener():
 
 def send_on_rabbitmq(msg):
     # TODO: Fill code
+    pass
 
 def send_message(content):
     send_on_rabbitmq({
